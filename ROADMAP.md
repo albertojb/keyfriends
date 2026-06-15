@@ -1,8 +1,7 @@
 # ROADMAP — Key Friends
 _draft_
 
-Letters currently covered by the word set (CAR, BUS, DOG, CAT, SUN):
-A B C D G N O R S T U — **11 of 26**
+Letters currently covered: A B C D E F G H I L N O P R S T U W X — **19 of 26**
 
 ---
 
@@ -16,17 +15,11 @@ A B C D G N O R S T U — **11 of 26**
 - Named constants for all timing values (code-degunker pass)
 - Open-source release: GitHub + live at sail.zo.space/keyfriends
 
----
+### ✅ Epic 1 — Backlog words (shipped 2026-06-15)
+Added: COW, PIG, BEE, FOX, OWL, HAT — 6 new creature SVGs.
+New letters: E F H I L P W X — coverage 11 → **19 of 26**
 
-## Epic 1 — Backlog words (6 words, 8 new letters)
-_First unfinished epic. Spec in /specs/epic-1-backlog-words.md_
-
-Add: COW, PIG, BEE, FOX, OWL, HAT — each needs a new creature SVG.
-
-New letters covered after this epic:
-E F H I L P W X — brings total to **19 of 26**
-
-Still missing after: J K M Q V Y Z
+Still missing: J K M Q V Y Z (Q excluded per GOAL.md)
 
 ---
 
