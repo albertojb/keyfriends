@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Key Friends</title>
+<style>
+  :root{
+    --sky:#cfe0e8; --sky2:#e7eef0; --sand:#ece2cf; --grass:#cdd9bd;
+    --ink:#2e3a44; --cap:#fbf8f2; --cap-edge:#e4ddcf;
+    --accent:#8bbf9f; --hint:#dfe8ec; --hint-edge:#cdd9de; --hint-on:#9fc7b3; --slot:#e9e2d4;
+    --drive-ms:5000ms; --parade-ms:5500ms;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;overflow:hidden;background:var(--sky);
+    font-family:"Segoe UI",system-ui,-apple-system,sans-serif;
+    -webkit-user-select:none;user-select:none;cursor:default;touch-action:none;}
+
+  /* MENU */
+  #menu{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;gap:34px;background:linear-gradient(180deg,var(--sky2),var(--sand));}
+  #menu h1{font-size:clamp(28px,5vw,46px);color:var(--ink);font-weight:800;letter-spacing:.5px}
+  #menu .modes{display:flex;gap:28px;flex-wrap:wrap;justify-content:center}
+  .mode-btn{width:200px;height:160px;border-radius:28px;border:none;background:var(--cap);
+    box-shadow:0 8px 0 var(--cap-edge),0 14px 26px rgba(46,58,68,.14);
+    font-size:54px;font-weight:800;color:var(--ink);cursor:pointer;display:flex;
+    align-items:center;justify-content:center;transition:transform .12s ease}
+  .mode-btn:hover,.mode-btn:focus-visible{transform:translateY(-4px);outline:none}
+  .mode-btn:active{transform:translateY(3px);box-shadow:0 5px 0 var(--cap-edge)}
+  .mode-btn small{display:block;font-size:15px;font-weight:600;opacity:.5;margin-top:6px}
+  #menu .opts{display:flex;align-items:center;gap:10px;color:var(--ink);font-size:16px;opacity:.75}
+  #menu .opts input{width:22px;height:22px;accent-color:var(--accent)}
+  #menu .parent{font-size:13px;color:var(--ink);opacity:.45;max-width:560px;text-align:center;line-height:1.6}
+
+  /* GAME */
+  #game{position:fixed;inset:0;display:none;
+    background:linear-gradient(180deg,var(--sky) 0%,var(--sky2) 52%,var(--grass) 52%,var(--sand) 100%);}
+  #game.on{display:block}
+  .scene{display:none}.scene.on{display:block}
+
+  .cap{border-radius:28px;background:var(--cap);
+    box-shadow:0 12px 0 var(--cap-edge),0 22px 40px rgba(46,58,68,.18);
+    display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--ink);
+    transition:opacity .35s ease, transform .2s ease;}
+  .cap.hit{transform:scale(1.08);
+    box-shadow:0 12px 0 var(--cap-edge),0 0 0 14px rgba(139,191,159,.45),0 22px 40px rgba(46,58,68,.18);}
+  .cap.hide{opacity:0}
+
+  /* numbers scene */
+  #numstage{position:absolute;top:33%;left:50%;transform:translate(-50%,-50%);
+    display:flex;flex-direction:column;align-items:center;gap:22px}
+  #numeral{width:min(26vh,200px);height:min(26vh,200px);font-size:min(17vh,132px);line-height:1}
+  #countrow{display:flex;gap:min(1.6vw,12px);align-items:flex-end;justify-content:center;min-height:min(10vw,86px)}
+  .unit{width:min(9vw,80px);opacity:0;transform:translateY(14px) scale(.85);
+    animation:rise .34s cubic-bezier(.34,1.4,.5,1) forwards}
+  .unit svg{width:100%;height:auto;display:block}
+  @keyframes rise{to{opacity:1;transform:translateY(0) scale(1)}}
+
+  /* word scene */
+  #clue{position:absolute;top:10%;left:50%;transform:translateX(-50%);width:min(17vh,135px);
+    transform-origin:center bottom;transition:opacity .45s ease, transform .45s ease}
+  #clue svg{width:100%;height:auto;display:block}
+  #word{position:absolute;top:33%;left:0;right:0;display:flex;justify-content:center;
+    gap:min(2vw,16px);flex-wrap:wrap;padding:0 4vw}
+  .wslot{width:var(--wsz);height:var(--wsz);border-radius:20px;background:var(--slot);
+    display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--ink);
+    font-size:calc(var(--wsz)*.5)}
+  .wslot.pending{opacity:.55;color:#aeb4bc;background:#eee8dd}
+  .wslot.active{background:var(--cap);box-shadow:0 10px 0 var(--cap-edge),0 18px 34px rgba(46,58,68,.16)}
+  .wslot.active.hit{transform:scale(1.06)}
+  .wslot.filled{background:transparent;padding:5px}
+
+  /* moving reward */
+  .creature{position:absolute;top:46%;left:0;will-change:transform;pointer-events:none}
+  .creature.air{top:18%}.creature.water{top:50%}
+  .mover{animation:drive var(--drive-ms) linear forwards}
+  @keyframes drive{from{transform:translateX(-32vw)}to{transform:translateX(118vw)}}
+  .bobber{width:min(24vh,180px);height:auto;display:block}
+  .bob-ground{animation:bobG .5s ease-in-out infinite alternate}
+  .bob-air{animation:bobA 1.6s ease-in-out infinite alternate}
+  .bob-water{animation:bobW 1.1s ease-in-out infinite alternate}
+  @keyframes bobG{to{transform:translateY(-7px)}}
+  @keyframes bobA{to{transform:translateY(-22px)}}
+  @keyframes bobW{to{transform:translateY(-10px)}}
+
+  /* GANG (collection shelf) */
+  #gang{position:absolute;left:0;right:0;bottom:13%;display:flex;flex-wrap:wrap;gap:8px;
+    justify-content:center;align-content:center;padding:0 4vw;max-height:22vh}
+  .slot{width:var(--sz);height:var(--sz);border-radius:14px;background:var(--slot);
+    display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--ink);
+    font-size:calc(var(--sz)*.46);opacity:.35}
+  .slot.filled{opacity:1;background:transparent}
+  .slot.filled .ph{display:none}
+  .slot .friend,.slot .mini{animation:pop .4s cubic-bezier(.34,1.5,.5,1)}
+  .slot .mini{width:86%;height:86%}
+  .slot .mini svg{width:100%;height:100%;display:block}
+  @keyframes pop{0%{transform:translateY(-18px) scale(.6)}100%{transform:translateY(0) scale(1)}}
+
+  .friend{position:relative;width:100%;height:100%;border-radius:14px;
+    background:color-mix(in srgb,var(--c) 32%,#fff);
+    border-bottom:5px solid color-mix(in srgb,var(--c) 55%,#9aa0a8);
+    display:flex;align-items:center;justify-content:center;color:#2e3a44;font-weight:800;
+    font-size:1em}
+  .friend .eyes{position:absolute;top:14%;left:0;right:0;display:flex;justify-content:center;gap:18%}
+  .friend .eyes i{width:9%;height:0;padding-bottom:9%;border-radius:50%;background:#2e3a44;opacity:.8}
+
+  #parade{position:absolute;left:0;right:0;bottom:15%;display:flex;gap:16px;align-items:flex-end;
+    pointer-events:none;animation:drive var(--parade-ms) linear forwards}
+  #parade .pf{width:min(10vw,88px);height:min(10vw,88px)}
+  #parade .pf svg{width:100%;height:100%}
+
+  /* hint keyboard */
+  #hint{position:absolute;left:0;right:0;bottom:2%;display:flex;flex-direction:column;
+    align-items:center;gap:5px;opacity:.9;pointer-events:none}
+  #hint.off{display:none}
+  .krow{display:flex;gap:5px}
+  .kkey{width:min(4.6vw,40px);height:min(4.6vw,40px);border-radius:9px;background:var(--hint);
+    border-bottom:3px solid var(--hint-edge);display:flex;align-items:center;justify-content:center;
+    font-size:min(2.1vw,17px);font-weight:700;color:var(--ink);opacity:.5}
+  .kkey.lit{background:var(--hint-on);border-bottom-color:#86b39d;color:#1f2b25;opacity:1;
+    animation:kpulse 2.4s ease-in-out infinite}
+  @keyframes kpulse{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+
+  #exit{position:fixed;top:18px;right:18px;width:46px;height:46px;opacity:0;transition:opacity .2s}
+  #exit.show{opacity:1}
+  #exit svg{transform:rotate(-90deg)}
+  #exit circle{fill:none;stroke-width:5}
+  .er-bg{stroke:rgba(46,58,68,.15)}
+  .er-fg{stroke:var(--accent);stroke-linecap:round;stroke-dasharray:126;stroke-dashoffset:126;
+    transition:stroke-dashoffset .1s linear}
+
+  @media (prefers-reduced-motion: reduce){
+    .bob-ground,.bob-air,.bob-water,.kkey.lit{animation:none}
+  }
+</style>
+</head>
+<body>
+
+<div id="menu">
+  <h1>Key Friends</h1>
+  <div class="modes">
+    <button class="mode-btn" id="btnLetters">ABC<small>words</small></button>
+    <button class="mode-btn" id="btnNumbers">123<small>numbers</small></button>
+  </div>
+  <label class="opts"><input type="checkbox" id="hintToggle" checked> show keyboard helper</label>
+  <p class="parent">For grown-ups: tap a mode. Numbers count up with vehicles; letters spell simple words. Fill the shelf, then everyone parades. Hold <b>Esc</b> 1.5s to return. Best in full screen; for total lockdown use your OS kiosk / guided-access mode.</p>
+</div>
+
+<div id="game">
+  <div id="scene-num" class="scene">
+    <div id="numstage">
+      <div id="numeral" class="cap"></div>
+      <div id="countrow"></div>
+    </div>
+  </div>
+  <div id="scene-word" class="scene">
+    <div id="clue"></div>
+    <div id="word"></div>
+  </div>
+  <div id="gang"></div>
+  <div id="hint"></div>
+  <div id="exit"><svg viewBox="0 0 46 46"><circle class="er-bg" cx="23" cy="23" r="20"/><circle class="er-fg" cx="23" cy="23" r="20"/></svg></div>
+</div>
+
+<script>
+// ---- timing & animation constants ----
+const ESC_HOLD_MS     = 1500;  // hold Escape this long to exit
+const ESC_RING_CIRC   = 126;   // stroke-dasharray for exit ring (2π × r=20)
+const ESC_TICK_MS     = 60;    // interval for ring progress animation
+const COUNT_STAGGER_MS = 200;  // delay between each vehicle appearing
+const COUNT_HOLD_MS   = 1400;  // hold after last vehicle before advancing
+const WORD_DONE_MS    = 2600;  // wait after word completes before next word
+const LETTER_LOCK_MS  = 320;   // brief lock after each correct letter press
+const CLUE_OPACITY_MIN = 0.35; // clue starts this dim (grows to 1 as word progresses)
+const CLUE_SCALE_MIN   = 0.65; // clue starts this small (grows to 1 as word progresses)
+
+// ---- creature library ----
+const C = {
+  car:{m:"ground",s:`<svg viewBox="0 0 200 110"><rect x="20" y="48" width="160" height="40" rx="16" fill="#6fb1c9"/><path d="M55 48 q8-30 45-30 q30 0 45 30 z" fill="#8ecadf"/><rect x="78" y="26" width="40" height="22" rx="6" fill="#dff0f5"/><circle cx="60" cy="90" r="16" fill="#3a3f47"/><circle cx="60" cy="90" r="6" fill="#9aa0a8"/><circle cx="140" cy="90" r="16" fill="#3a3f47"/><circle cx="140" cy="90" r="6" fill="#9aa0a8"/></svg>`},
+  firetruck:{m:"ground",s:`<svg viewBox="0 0 210 120"><rect x="18" y="52" width="174" height="44" rx="10" fill="#d9786c"/><rect x="22" y="32" width="64" height="34" rx="8" fill="#c9665b"/><rect x="30" y="40" width="22" height="18" rx="4" fill="#dff0f5"/><rect x="90" y="44" width="96" height="8" rx="4" fill="#c9665b" transform="rotate(-9 90 44)"/><circle cx="56" cy="98" r="16" fill="#3a3f47"/><circle cx="56" cy="98" r="6" fill="#9aa0a8"/><circle cx="150" cy="98" r="16" fill="#3a3f47"/><circle cx="150" cy="98" r="6" fill="#9aa0a8"/><circle cx="40" cy="26" r="6" fill="#f2c14e"/></svg>`},
+  bus:{m:"ground",s:`<svg viewBox="0 0 210 120"><rect x="16" y="32" width="178" height="64" rx="14" fill="#e6c469"/><rect x="30" y="44" width="26" height="22" rx="4" fill="#dff0f5"/><rect x="66" y="44" width="26" height="22" rx="4" fill="#dff0f5"/><rect x="102" y="44" width="26" height="22" rx="4" fill="#dff0f5"/><rect x="138" y="44" width="26" height="22" rx="4" fill="#dff0f5"/><circle cx="56" cy="98" r="16" fill="#3a3f47"/><circle cx="56" cy="98" r="6" fill="#9aa0a8"/><circle cx="152" cy="98" r="16" fill="#3a3f47"/><circle cx="152" cy="98" r="6" fill="#9aa0a8"/></svg>`},
+  train:{m:"ground",s:`<svg viewBox="0 0 220 120"><rect x="110" y="46" width="86" height="46" rx="8" fill="#8aa9b6"/><rect x="14" y="40" width="84" height="52" rx="8" fill="#7fa88b"/><rect x="22" y="48" width="30" height="24" rx="4" fill="#dff0f5"/><rect x="40" y="22" width="16" height="22" rx="3" fill="#5e8068"/><circle cx="34" cy="98" r="14" fill="#3a3f47"/><circle cx="78" cy="98" r="14" fill="#3a3f47"/><circle cx="132" cy="98" r="14" fill="#3a3f47"/><circle cx="176" cy="98" r="14" fill="#3a3f47"/></svg>`},
+  tractor:{m:"ground",s:`<svg viewBox="0 0 200 120"><rect x="40" y="44" width="64" height="40" rx="8" fill="#8ab06a"/><rect x="50" y="30" width="34" height="22" rx="5" fill="#a7c98a"/><rect x="108" y="58" width="54" height="22" rx="6" fill="#7aa05c"/><circle cx="150" cy="92" r="26" fill="#3a3f47"/><circle cx="150" cy="92" r="11" fill="#9aa0a8"/><circle cx="60" cy="98" r="15" fill="#3a3f47"/><circle cx="60" cy="98" r="6" fill="#9aa0a8"/></svg>`},
+  plane:{m:"air",s:`<svg viewBox="0 0 220 110"><path d="M20 56 q60-22 150-14 q34 4 34 14 q0 10-34 14 q-90 8-150-14 z" fill="#cdd6df"/><path d="M70 50 l-26-34 l16 0 l40 30 z" fill="#aab4be"/><path d="M70 62 l-26 34 l16 0 l40-30 z" fill="#aab4be"/><path d="M188 44 l16-22 l8 2 l-6 24 z" fill="#aab4be"/><circle cx="70" cy="56" r="5" fill="#8fb1c4"/><circle cx="92" cy="56" r="5" fill="#8fb1c4"/><circle cx="114" cy="56" r="5" fill="#8fb1c4"/></svg>`},
+  boat:{m:"water",s:`<svg viewBox="0 0 200 140"><path d="M30 96 l140 0 l-18 30 l-104 0 z" fill="#b58a63"/><rect x="96" y="20" width="6" height="78" fill="#7a5b3e"/><path d="M102 26 l52 56 l-52 0 z" fill="#dff0f5"/><path d="M96 30 l-40 50 l40 0 z" fill="#cfe2e9"/></svg>`},
+  dinosaur:{m:"ground",s:`<svg viewBox="0 0 230 150"><path d="M40 120 q-20-40 18-60 q20-12 50-12 q30 0 48 14 q26-44 50-44 q-18 18-16 44 q14 18 8 44 q-6 22-30 24 z" fill="#9cc089"/><circle cx="44" cy="44" r="14" fill="#9cc089"/><circle cx="40" cy="40" r="3" fill="#2e3a44"/><rect x="60" y="120" width="12" height="22" rx="5" fill="#7fa56e"/><rect x="120" y="120" width="12" height="22" rx="5" fill="#7fa56e"/><circle cx="120" cy="78" r="5" fill="#7fa56e"/><circle cx="150" cy="90" r="5" fill="#7fa56e"/></svg>`},
+  dog:{m:"ground",s:`<svg viewBox="0 0 210 130"><ellipse cx="110" cy="78" rx="62" ry="34" fill="#d9b389"/><circle cx="44" cy="56" r="28" fill="#d9b389"/><path d="M24 36 q-14 4-12 26 q14 0 20-14 z" fill="#b8946b"/><circle cx="34" cy="56" r="4" fill="#2e3a44"/><circle cx="22" cy="64" r="6" fill="#3a3f47"/><path d="M168 70 q26-10 22 12 q-14 0-22-6 z" fill="#c7a37b"/><rect x="80" y="104" width="12" height="22" rx="5" fill="#c7a37b"/><rect x="128" y="104" width="12" height="22" rx="5" fill="#c7a37b"/></svg>`},
+  cat:{m:"ground",s:`<svg viewBox="0 0 200 130"><ellipse cx="104" cy="82" rx="58" ry="30" fill="#aab0b8"/><circle cx="50" cy="58" r="26" fill="#aab0b8"/><path d="M32 38 l6 18 l-20-4 z" fill="#9aa0a8"/><path d="M68 38 l-6 18 l20-4 z" fill="#9aa0a8"/><circle cx="42" cy="58" r="3" fill="#2e3a44"/><circle cx="58" cy="58" r="3" fill="#2e3a44"/><path d="M158 74 q30-26 22 4 q-12 2-22 8 z" fill="#9aa0a8"/><rect x="78" y="104" width="11" height="20" rx="5" fill="#9aa0a8"/><rect x="122" y="104" width="11" height="20" rx="5" fill="#9aa0a8"/></svg>`},
+  sun:{m:"air",s:`<svg viewBox="0 0 150 150"><g fill="#f0c560"><rect x="71" y="6" width="8" height="22" rx="4"/><rect x="71" y="122" width="8" height="22" rx="4"/><rect x="6" y="71" width="22" height="8" rx="4"/><rect x="122" y="71" width="22" height="8" rx="4"/><rect x="26" y="28" width="8" height="20" rx="4" transform="rotate(45 30 38)"/><rect x="116" y="28" width="8" height="20" rx="4" transform="rotate(-45 120 38)"/><rect x="26" y="102" width="8" height="20" rx="4" transform="rotate(-45 30 112)"/><rect x="116" y="102" width="8" height="20" rx="4" transform="rotate(45 120 112)"/></g><circle cx="75" cy="75" r="34" fill="#f4cf73"/><circle cx="64" cy="72" r="4" fill="#2e3a44"/><circle cx="86" cy="72" r="4" fill="#2e3a44"/><path d="M62 86 q13 12 26 0" stroke="#2e3a44" stroke-width="3" fill="none" stroke-linecap="round"/></svg>`}
+};
+
+const WORDS = [{w:"CAR",c:"car"},{w:"BUS",c:"bus"},{w:"DOG",c:"dog"},{w:"CAT",c:"cat"},{w:"SUN",c:"sun"}];
+
+const numCreature = {"1":"car","2":"bus","3":"train","4":"dog","5":"firetruck","6":"cat","7":"tractor","8":"boat","9":"dinosaur"};
+const numColors   = {"0":"#9aa0a8","1":"#d98b8b","2":"#e0a878","3":"#e6cf83","4":"#9cc089","5":"#8fb8d8","6":"#8f9fd8","7":"#b79fd0","8":"#d99fc0","9":"#7fb5ad"};
+const letterPal   = ["#d98b8b","#e0a878","#e6cf83","#9cc089","#8fb8d8","#8f9fd8","#b79fd0","#7fb5ad"];
+const NUMBERS     = "0123456789".split("");
+
+const menu      = document.getElementById('menu');
+const game      = document.getElementById('game');
+const sceneNum  = document.getElementById('scene-num');
+const sceneWord = document.getElementById('scene-word');
+const numeralEl = document.getElementById('numeral');
+const countrow  = document.getElementById('countrow');
+const clueEl    = document.getElementById('clue');
+const wordEl    = document.getElementById('word');
+const gangEl    = document.getElementById('gang');
+const hintEl    = document.getElementById('hint');
+const exitEl    = document.getElementById('exit');
+const exitFg    = document.querySelector('.er-fg');
+const hintToggle = document.getElementById('hintToggle');
+
+let mode = null, current = null, locked = false, showHint = true;
+let collected = new Set();
+let curWord = "", curCreature = "", wi = 0;
+
+document.getElementById('btnLetters').onclick = () => start('words');
+document.getElementById('btnNumbers').onclick = () => start('numbers');
+
+function friendHTML(ch, color) {
+  return `<div class="friend" style="--c:${color}"><span class="eyes"><i></i><i></i></span>${ch}</div>`;
+}
+
+function start(m) {
+  mode = m; showHint = hintToggle.checked; collected = new Set();
+  try { document.documentElement.requestFullscreen && document.documentElement.requestFullscreen(); } catch(e) {}
+  menu.style.display = 'none'; game.classList.add('on');
+  sceneNum.classList.toggle('on', m === 'numbers');
+  sceneWord.classList.toggle('on', m === 'words');
+  buildHintBoard(); hintEl.classList.toggle('off', !showHint);
+  buildGang();
+  if (m === 'numbers') nextNumber(); else nextWord();
+}
+
+function toMenu() {
+  game.classList.remove('on'); sceneNum.classList.remove('on'); sceneWord.classList.remove('on');
+  menu.style.display = 'flex';
+  document.querySelectorAll('.creature,#parade').forEach(n => n.remove());
+  countrow.innerHTML = '';
+  try { document.fullscreenElement && document.exitFullscreen(); } catch(e) {}
+}
+
+// ---- shelf ----
+function buildGang() {
+  gangEl.innerHTML = '';
+  if (mode === 'numbers') {
+    const sz = "min(8vw,62px)";
+    NUMBERS.forEach(ch => {
+      const s = document.createElement('div'); s.className = 'slot'; s.dataset.k = ch; s.style.setProperty('--sz', sz);
+      s.innerHTML = `<span class="ph">${ch}</span>`; gangEl.appendChild(s);
+    });
+  } else {
+    const sz = "min(11vw,92px)";
+    WORDS.forEach(o => {
+      const s = document.createElement('div'); s.className = 'slot'; s.dataset.k = o.w; s.style.setProperty('--sz', sz);
+      s.innerHTML = `<span class="ph">?</span>`; gangEl.appendChild(s);
+    });
+  }
+}
+
+function fillGangNumber(n) {
+  const s = gangEl.querySelector(`.slot[data-k="${n}"]`); if (!s) return;
+  s.insertAdjacentHTML('beforeend', friendHTML(n, numColors[n])); s.classList.add('filled');
+}
+
+function fillGangWord(w, cr) {
+  const s = gangEl.querySelector(`.slot[data-k="${w}"]`); if (!s) return;
+  s.insertAdjacentHTML('beforeend', `<div class="mini">${C[cr].s}</div>`); s.classList.add('filled');
+}
+
+// ---- numbers ----
+function nextNumber() {
+  countrow.innerHTML = '';
+  const remaining = NUMBERS.filter(c => !collected.has(c));
+  if (remaining.length === 0) { finale(); return; }
+  current = remaining[Math.floor(Math.random() * remaining.length)];
+  numeralEl.textContent = current; numeralEl.classList.remove('hide', 'hit');
+  litHint(current); locked = false;
+}
+
+function rewardNumber(n) {
+  const count = parseInt(n, 10);
+  countrow.innerHTML = '';
+  const cr = numCreature[n];
+  for (let i = 0; i < count; i++) {
+    const u = document.createElement('div'); u.className = 'unit';
+    u.style.animationDelay = (i * COUNT_STAGGER_MS / 1000) + 's'; u.innerHTML = C[cr].s;
+    countrow.appendChild(u);
+  }
+  setTimeout(() => {
+    numeralEl.classList.add('hide');
+    collected.add(n); fillGangNumber(n); nextNumber();
+  }, count * COUNT_STAGGER_MS + COUNT_HOLD_MS);
+}
+
+// ---- words ----
+function nextWord() {
+  document.querySelectorAll('.creature').forEach(n => n.remove());
+  const remaining = WORDS.filter(o => !collected.has(o.w));
+  if (remaining.length === 0) { finale(); return; }
+  const o = remaining[Math.floor(Math.random() * remaining.length)];
+  curWord = o.w; curCreature = o.c; wi = 0; renderWord(); locked = false;
+}
+
+function renderWord() {
+  clueEl.innerHTML = C[curCreature].s;
+  const prog = curWord.length ? wi / curWord.length : 1;
+  clueEl.style.opacity = (CLUE_OPACITY_MIN + (1 - CLUE_OPACITY_MIN) * prog).toFixed(2);
+  clueEl.style.transform = `translateX(-50%) scale(${(CLUE_SCALE_MIN + (1 - CLUE_SCALE_MIN) * prog).toFixed(2)})`;
+  const wsz = curWord.length >= 5 ? "min(13vh,100px)" : "min(16vh,124px)";
+  wordEl.innerHTML = '';
+  [...curWord].forEach((ch, i) => {
+    const s = document.createElement('div'); s.className = 'wslot'; s.style.setProperty('--wsz', wsz);
+    if (i < wi) {
+      const col = letterPal[i % letterPal.length];
+      s.classList.add('filled'); s.innerHTML = friendHTML(ch, col);
+      s.querySelector('.friend').style.animation = 'pop .4s cubic-bezier(.34,1.5,.5,1)';
+    } else if (i === wi) {
+      s.classList.add('active'); s.textContent = ch;
+    } else {
+      s.classList.add('pending'); s.textContent = ch;
+    }
+    wordEl.appendChild(s);
+  });
+  current = curWord[wi]; litHint(current);
+}
+
+function letterCorrect() {
+  locked = true;
+  wi++;
+  renderWord();
+  if (wi >= curWord.length) {
+    spawnVehicle(curCreature);
+    setTimeout(() => { collected.add(curWord); fillGangWord(curWord, curCreature); nextWord(); }, WORD_DONE_MS);
+  } else {
+    setTimeout(() => { locked = false; }, LETTER_LOCK_MS);
+  }
+}
+
+// ---- shared reward vehicle ----
+function spawnVehicle(key) {
+  document.querySelectorAll('.creature').forEach(n => n.remove());
+  const data = C[key];
+  const wrap = document.createElement('div'); wrap.className = 'creature ' + data.m;
+  wrap.innerHTML = `<div class="mover"><div class="bobber bob-${data.m}">${data.s}</div></div>`;
+  game.appendChild(wrap);
+  wrap.querySelector('.mover').addEventListener('animationend', () => wrap.remove());
+}
+
+// ---- finale parade ----
+function finale() {
+  locked = true;
+  numeralEl.classList.add('hide');
+  const row = document.createElement('div'); row.id = 'parade';
+  if (mode === 'numbers') {
+    const t = document.createElement('div'); t.className = 'pf';
+    t.style.width = 'min(15vw,128px)'; t.style.height = 'min(15vw,128px)';
+    t.innerHTML = C.train.s; row.appendChild(t);
+    NUMBERS.forEach(ch => {
+      const f = document.createElement('div'); f.className = 'pf';
+      f.innerHTML = friendHTML(ch, numColors[ch]); row.appendChild(f);
+    });
+  } else {
+    WORDS.forEach(o => {
+      const f = document.createElement('div'); f.className = 'pf';
+      f.innerHTML = C[o.c].s; row.appendChild(f);
+    });
+  }
+  game.appendChild(row);
+  row.addEventListener('animationend', () => {
+    row.remove(); collected = new Set(); buildGang();
+    if (mode === 'numbers') nextNumber(); else nextWord();
+  });
+}
+
+// ---- hint keyboard ----
+function buildHintBoard() {
+  hintEl.innerHTML = '';
+  const rows = mode === 'numbers' ? ["1234567890"] : ["QWERTYUIOP","ASDFGHJKL","ZXCVBNM"];
+  rows.forEach(r => {
+    const row = document.createElement('div'); row.className = 'krow';
+    r.split("").forEach(ch => {
+      const k = document.createElement('div'); k.className = 'kkey';
+      k.textContent = ch; k.dataset.k = ch; row.appendChild(k);
+    });
+    hintEl.appendChild(row);
+  });
+}
+
+function litHint(ch) {
+  document.querySelectorAll('.kkey').forEach(k => k.classList.toggle('lit', k.dataset.k === ch));
+}
+
+// ---- input (palm-proof) ----
+let escHoldStart = 0, escHoldTimer = null;
+
+window.addEventListener('keydown', e => {
+  if (e.key !== 'F11' && e.key !== 'F12') e.preventDefault();
+  if (menu.style.display !== 'none') return;
+  if (e.repeat) return;
+
+  if (e.key === 'Escape') {
+    if (!escHoldStart) {
+      escHoldStart = performance.now();
+      exitEl.classList.add('show');
+      escHoldTimer = setInterval(() => {
+        const progress = Math.min(1, (performance.now() - escHoldStart) / ESC_HOLD_MS);
+        exitFg.style.strokeDashoffset = String(ESC_RING_CIRC * (1 - progress));
+        if (progress >= 1) {
+          clearInterval(escHoldTimer); escHoldTimer = null; escHoldStart = 0;
+          exitEl.classList.remove('show'); exitFg.style.strokeDashoffset = String(ESC_RING_CIRC);
+          toMenu();
+        }
+      }, ESC_TICK_MS);
+    }
+    return;
+  }
+
+  if (locked) return;
+
+  if (mode === 'numbers') {
+    if (e.key === current || e.code === 'Digit' + current || e.code === 'Numpad' + current) {
+      locked = true; numeralEl.classList.add('hit'); rewardNumber(current);
+    }
+  } else {
+    if (e.key && e.key.length === 1 && e.key.toUpperCase() === current) letterCorrect();
+  }
+}, true);
+
+window.addEventListener('keyup', e => {
+  if (e.key === 'Escape') {
+    if (escHoldTimer) { clearInterval(escHoldTimer); escHoldTimer = null; }
+    escHoldStart = 0;
+    exitEl.classList.remove('show');
+    exitFg.style.strokeDashoffset = String(ESC_RING_CIRC);
+  }
+}, true);
+
+window.addEventListener('contextmenu', e => e.preventDefault());
+</script>
+</body>
+</html>
