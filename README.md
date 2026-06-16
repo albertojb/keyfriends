@@ -2,9 +2,9 @@
 
 A keyboard-only educational game for pre-reading toddlers. Teaches key recognition, number quantities, and simple word spelling — with no reading required, no audio, and no mouse.
 
-**[▶ Play it live](https://sail.zo.space/keyfriends)**
+**[▶ Play it live](https://kf.jbtcr.com/)**
 
-![Key Friends screenshot](https://sail.zo.space/keyfriends)
+![Key Friends screenshot](https://kf.jbtcr.com/)
 
 ---
 
