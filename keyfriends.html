@@ -220,6 +220,11 @@ let mode = null, current = null, locked = false, showHint = true;
 let collected = new Set();
 let curWord = "", curCreature = "", wi = 0;
 
+function toggleKofi(show) {
+  const el = document.getElementById('kofi-widget-overlay');
+  if (el) el.style.display = show ? '' : 'none';
+}
+
 document.getElementById('btnLetters').onclick = () => start('words');
 document.getElementById('btnNumbers').onclick = () => start('numbers');
 
@@ -230,6 +235,7 @@ function friendHTML(ch, color) {
 function start(m) {
   mode = m; showHint = hintToggle.checked; collected = new Set();
   try { document.documentElement.requestFullscreen && document.documentElement.requestFullscreen(); } catch(e) {}
+  toggleKofi(false);
   menu.style.display = 'none'; game.classList.add('on');
   sceneNum.classList.toggle('on', m === 'numbers');
   sceneWord.classList.toggle('on', m === 'words');
@@ -241,6 +247,7 @@ function start(m) {
 function toMenu() {
   game.classList.remove('on'); sceneNum.classList.remove('on'); sceneWord.classList.remove('on');
   menu.style.display = 'flex';
+  toggleKofi(true);
   document.querySelectorAll('.creature,#parade').forEach(n => n.remove());
   countrow.innerHTML = '';
   try { document.fullscreenElement && document.exitFullscreen(); } catch(e) {}
@@ -449,7 +456,7 @@ window.addEventListener('contextmenu', e => e.preventDefault());
   kofiWidgetOverlay.draw('kekojb', {
     'type': 'floating-chat',
     'floating-chat.donateButton.text': 'Support me',
-    'floating-chat.donateButton.background-color': '#00b9fe',
+    'floating-chat.donateButton.background-color': '#9aa0a8',
     'floating-chat.donateButton.text-color': '#fff'
   });
 </script>
