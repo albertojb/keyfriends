@@ -4,7 +4,7 @@ A keyboard-only educational game for pre-reading toddlers. Teaches key recogniti
 
 **[▶ Play it live](https://kf.jbtcr.com/)**
 
-![Key Friends screenshot](https://kf.jbtcr.com/)
+![Key Friends screenshot](./screenshot.png)
 
 ---
 
